@@ -2,22 +2,25 @@
 
 from pyModbusTCP.client import ModbusClient
 from time import sleep
+import math
 
 class Server():
     def __init__(self):
-        self.reg = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-        self.server = ModbusClient(host="10.22.183.69", port=12345)
-        self.EstadosRobot = ["Reset","Charging","EnCaminoaModula","RecogiendoEnModula",
-        "EnCaminoaConveyorA","DejandoEnConveyorA","EnCaminoaABBM","DejandoEnABBM",
-        "Libre","EnCaminoaHOME","EnCaminoaConveyorC","RecogiendoEnConveyorC",
-        "EnCaminoaABBP","DejandoEnABBP","EnCaminoaABBT","RecogiendoEnABBT",
-        "EnCaminoaAlmacen","DejandoEnAlamcen"]
+        self.reg = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+        self.server = ModbusClient(host="10.22.240.51", port=2022)
+        # self.server = ModbusClient(host="192.168.100.10", port=12345) ##Para Simulaciones
+        self.EstadosRobot = ["Reset","Charging","En Camino a Modula","Recogiendo En Modula",
+        "En Camino a Conveyor1","Dejando En Conveyor1","Libre","En Camino a HOME",
+        "En Camino a Conveyor2","Recogiendo en Conveyor2","En Camino a ABB Place","Dejando en ABB Place",
+        "En Camino a ABB Pick","Recogiendo en ABB Pick", "EnCaminoaAlmacen","DejandoEnAlamcen"]
         self.EstadosMision = ["PENDING","ACTIVE","PREEMPTED","SUCCEEDED",
         "ABORTED","REJECTED","PREEMPTING","RECALLING","RECALLED","LOST"]
+        self.EstadosModula = ["Vacio", "Piezas Disponibles"]
+        self.EstadosAlmacen = ["Vacio", "Lleno"]
     
     def Vars(self):
         if self.server.open():
-            self.reg = self.server.read_holding_registers(0,19)
+            self.reg = self.server.read_holding_registers(0,21)
         self.PzasMod = self.reg[1]
         self.StatConv = self.reg[2]
         self.StatABB = self.reg[3]
@@ -103,6 +106,8 @@ class Server():
         self.xBatx2 = self.reg[14]*1.5
         # self.xBatOM = self.reg[23]*1.5
 
+        
+        #Transformar datos de current pos Smart1
         firstx1 = int(self.CXx1/10000)
         if firstx1 == 1:
             self.CXx1 = (self.CXx1-firstx1*10000)/1000
@@ -115,6 +120,20 @@ class Server():
         else:
             self.CYx1 = (-(self.CYx1-firsty1*10000))/1000
 
+        #Transformar datos de goal Smart1
+        firstgx1 = int(self.GXx1/10000)
+        if firstgx1 == 1:
+            self.GXx1 = (self.GXx1-firstgx1*10000)/1000
+        else:
+            self.GXx1 = (-(self.GXx1-firstgx1*10000))/1000
+
+        firstgy1 = int(self.GYx1/10000)
+        if firstgy1 == 1:
+            self.GYx1 = (self.GYx1-firstgy1*10000)/1000
+        else:
+            self.GYx1 = (-(self.GYx1-firstgy1*10000))/1000
+
+        #Transformar datos de current pos Smart2
         firstx2 = int(self.CXx2/10000)
         if firstx2 == 1:
             self.CXx2 = (self.CXx2-firstx2*10000)/1000
@@ -126,3 +145,39 @@ class Server():
             self.CYx2 = (self.CYx2-firsty2*10000)/1000
         else:
             self.CYx2 = (-(self.CYx2-firsty2*10000))/1000
+
+        #Transformar datos de Goal Smart2
+        firstgx2 = int(self.GXx2/10000)
+        if firstgx2 == 1:
+            self.GXx2 = (self.GXx2-firstgx2*10000)/1000
+        else:
+            self.GXx2 = (-(self.GXx2-firstgx2*10000))/1000
+
+        firstgy2 = int(self.GYx2/10000)
+        if firstgy2 == 1:
+            self.GYx2 = (self.GYx2-firstgy2*10000)/1000
+        else:
+            self.GYx2 = (-(self.GYx2-firstgy2*10000))/1000
+
+        self.distSMART1 = math.sqrt(((self.GXx1-self.CXx1)**2) + ((self.GYx1-self.CYx1)**2))
+        self.distSMART2 = math.sqrt(((self.GXx2-self.CXx2)**2) + ((self.GYx2-self.CYx2)**2))
+
+        if self.PzasMod == 0:
+            self.PzasMod = self.EstadosModula[0]
+        elif self.PzasMod == 1:
+            self.PzasMod = self.EstadosModula[1]
+
+        if self.PzasAlm == 0:
+            self.PzasAlm = self.EstadosAlmacen[0]
+        elif self.PzasAlm == 1:
+            self.PzasAlm = self.EstadosAlmacen[1]
+
+        if (self.reg[5] == 1) or (self.reg[5] == 6):
+            self.colorx1 = "#000000"
+        else:
+            self.colorx1 = "#f78902"
+
+        if (self.reg[12] == 1) or (self.reg[12] == 6):
+            self.colorx2 = "#000000"
+        else:
+            self.colorx2 = "#f78902"
