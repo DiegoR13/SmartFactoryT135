@@ -10,6 +10,8 @@ class ControlWindow(threading.Thread):
         self.srvr = Server()
         threading.Thread.__init__(self)
         self.start()
+        self.estadoBot1 = 0
+        self.estadoBot2 = 0
         
     def callback(self):
         self.window.quit()  
@@ -41,12 +43,32 @@ class ControlWindow(threading.Thread):
         self.txtGYx2.set(self.srvr.GYx2)
         self.txtCXx2.set(self.srvr.CXx2)
         self.txtCYx2.set(self.srvr.CYx2)
+        self.txtRSOM.set(self.srvr.RSOM)
         self.txtD2Gx2.set(self.srvr.distSMART2)
         self.txtPzasMod.set(self.srvr.PzasMod)
         self.txtStatConv.set(self.srvr.StatConv)
         self.txtStatABB.set(self.srvr.StatABB)
         self.txtPzasAlm.set(self.srvr.PzasAlm)
         
+    def changeBot1(self):
+        if self.estadoBot1 == 0:
+            self.txtBot1.set("Activar")
+            self.srvr.changeStates(5,16)
+            self.estadoBot1 = 1
+        elif self.estadoBot1 == 1:
+            self.txtBot1.set("Desactivar")
+            self.srvr.changeStates(5,0)
+            self.estadoBot1 = 0
+
+    def changeBot2(self):
+        if self.estadoBot2 == 0:
+            self.txtBot2.set("Activar")
+            self.srvr.changeStates(12,16)
+            self.estadoBot2 = 1
+        elif self.estadoBot2 == 1:
+            self.txtBot2.set("Desactivar")
+            self.srvr.changeStates(12,0)
+            self.estadoBot2 = 0
 
     def run(self):
         self.srvr.Vars()
@@ -65,6 +87,7 @@ class ControlWindow(threading.Thread):
         self.window.columnconfigure(7, weight=1)
         self.window.columnconfigure(8, weight=1)
         self.window.columnconfigure(9, weight=1)
+        self.window.columnconfigure(10, weight=1)
 
         self.window.rowconfigure(0, weight=1)
         self.window.rowconfigure(1, weight=1)
@@ -105,10 +128,10 @@ class ControlWindow(threading.Thread):
         LabelRobot.grid(row=1, column=3, columnspan=2)
         self.LabelxMART1 = Label(self.window, text="xMART 1", font=("Bahnschrift", 20), fg=self.srvr.colorx1)
         self.LabelxMART2 = Label(self.window, text="xMART 2", font=("Bahnschrift", 20), fg=self.srvr.colorx2)
-        # LabelOMRON = Label(self.window, text="OMRON", font=("Bahnschrift", 20))
+        LabelOMRON = Label(self.window, text="OMRON", font=("Bahnschrift", 20))
         self.LabelxMART1.grid(row=3, column=0)
         self.LabelxMART2.grid(row=4, column=0)
-        # LabelOMRON.grid(row=5, column=0)
+        LabelOMRON.grid(row=5, column=0)
         LabelTitRobot = Label(self.window, text="Robot", font=("Bahnschrift", 15))
         LabelTitRS = Label(self.window, text="Robot Status", font=("Bahnschrift", 15))
         LabelTitMS = Label(self.window, text="Mission Status", font=("Bahnschrift", 15))
@@ -118,6 +141,12 @@ class ControlWindow(threading.Thread):
         LabelTitCurrX = Label(self.window, text="Current X", font=("Bahnschrift", 15))
         LabelTitCurrY = Label(self.window, text="Current Y", font=("Bahnschrift", 15))
         LabelTitDis2G = Label(self.window, text="Distance to Goal", font=("Bahnschrift", 15))
+        self.txtBot1 = StringVar()
+        self.txtBot2 = StringVar()
+        self.txtBot1.set("Desactivar")
+        self.txtBot2.set("Desactivar")
+        self.DeactSMART1 = Button(self.window, textvariable=self.txtBot1, command=self.changeBot1, font=("Bahnschrift", 10))
+        self.DeactSMART2 = Button(self.window, textvariable=self.txtBot2, command=self.changeBot2, font=("Bahnschrift", 10))
         LabelTitRobot.grid(row=2 ,column=0)
         LabelTitRS.grid(row=2 ,column=1)
         LabelTitMS.grid(row=2 ,column=2)
@@ -127,6 +156,8 @@ class ControlWindow(threading.Thread):
         LabelTitCurrX.grid(row=2 ,column=6)
         LabelTitCurrY.grid(row=2 ,column=7)
         LabelTitDis2G.grid(row=2 ,column=8)
+        self.DeactSMART1.grid(row=3, column=9)
+        self.DeactSMART2.grid(row=4, column=9)
         sep1 = ttk.Separator(self.window, orient='horizontal')
         sep2 = ttk.Separator(self.window, orient='horizontal')
         sep3 = ttk.Separator(self.window, orient='horizontal')
@@ -140,19 +171,21 @@ class ControlWindow(threading.Thread):
         sep11 = ttk.Separator(self.window, orient='vertical')
         sep12 = ttk.Separator(self.window, orient='vertical')
         sep13 = ttk.Separator(self.window, orient='vertical')
+        sep30 = ttk.Separator(self.window, orient='vertical')
         sep1.grid(row=2, column=0, columnspan=10, sticky=N+E+W)
         sep2.grid(row=2, column=0, columnspan=10, sticky=S+E+W)
         sep3.grid(row=3, column=0, columnspan=10, sticky=S+E+W)
         sep4.grid(row=4, column=0, columnspan=10, sticky=S+E+W)
-        # sep5.grid(row=5, column=0, columnspan=10, sticky=S+E+W)
-        sep6.grid(row=2, column=0, rowspan=3, sticky=N+S+E)
-        sep7.grid(row=2, column=1, rowspan=3, sticky=N+S+E)
+        sep5.grid(row=5, column=0, columnspan=2, sticky=S+E+W)
+        sep6.grid(row=2, column=0, rowspan=4, sticky=N+S+E)
+        sep7.grid(row=2, column=1, rowspan=4, sticky=N+S+E)
         sep8.grid(row=2, column=2, rowspan=3, sticky=N+S+E)
         sep9.grid(row=2, column=3, rowspan=3, sticky=N+S+E)
         sep10.grid(row=2, column=4, rowspan=3, sticky=N+S+E)
         sep11.grid(row=2, column=5, rowspan=3, sticky=N+S+E)
         sep12.grid(row=2, column=6, rowspan=3, sticky=N+S+E)
         sep13.grid(row=2, column=7, rowspan=3, sticky=N+S+E)
+        sep30.grid(row=2, column=8, rowspan=3, sticky=N+S+E)
         self.x1BattCanvas=Canvas(self.window, width=150, height=55)
         self.x2BattCanvas=Canvas(self.window, width=150, height=55)
         # self.OmBattCanvas=Canvas(self.window, width=150, height=55)
@@ -228,7 +261,7 @@ class ControlWindow(threading.Thread):
         self.txtCXx2 = StringVar()
         self.txtCYx2 = StringVar()
         self.txtD2Gx2 = StringVar()
-        # txtRSOM = StringVar()
+        self.txtRSOM = StringVar()
         # txtMSOM = StringVar()        
         # txtGXOM = StringVar()
         # txtGYOM = StringVar()
@@ -254,7 +287,7 @@ class ControlWindow(threading.Thread):
         self.txtCXx2.set(self.srvr.CXx2)
         self.txtCYx2.set(self.srvr.CYx2)
         self.txtD2Gx2.set(self.srvr.distSMART2) 
-        # txtRSOM.set(self.srvr.RSOM)
+        self.txtRSOM.set(self.srvr.RSOM)
         # txtMSOM.set(self.srvr.MSOM)
         # txtGXOM.set(self.srvr.GXOM)
         # txtGYOM.set(self.srvr.GYOM)
@@ -282,7 +315,7 @@ class ControlWindow(threading.Thread):
         LabCXx2 = Label(self.window, textvariable=self.txtCXx2, font=("Bahnschrift", 15))
         LabCYx2 = Label(self.window, textvariable=self.txtCYx2, font=("Bahnschrift", 15))
         LabD2Gx2 = Label(self.window, textvariable=self.txtD2Gx2, font=("Bahnschrift", 15))
-        # LabRSOM = Label(self.window, textvariable=self.txtRSOM, font=("Bahnschrift", 15))
+        LabRSOM = Label(self.window, textvariable=self.txtRSOM, font=("Bahnschrift", 15))
         # LabMSOM = Label(self.window, textvariable=self.txtMSOM, font=("Bahnschrift", 15))
         # self.OmBattCanvas.create_text(75,27.5,text=(str(self.srvr.BatOM) + " %"), font=("Bahnschrift", 15))
         # LabGXOM = Label(self.window, textvariable=self.txtGXOM, font=("Bahnschrift", 15))
@@ -309,7 +342,7 @@ class ControlWindow(threading.Thread):
         LabCXx2.grid(row=4 ,column=6 )
         LabCYx2.grid(row=4 ,column=7 )
         LabD2Gx2.grid(row=4 ,column=8 )
-        # LabRSOM.grid(row=5 ,column=1 )
+        LabRSOM.grid(row=5 ,column=1 )
         # LabMSOM.grid(row=5 ,column=2 )
         # LabGXOM.grid(row=5 ,column=4 )
         # LabGYOM.grid(row=5 ,column=5 )

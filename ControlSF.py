@@ -23,7 +23,7 @@ class InfoRegistros:
     InstruccionPLC = 20
     InstruccionABB = 21
 
-class EstadosSMART:
+class EstadosROBOT:
     Reset = 0
     Charging = 1
     EnCaminoaModula = 2
@@ -40,6 +40,8 @@ class EstadosSMART:
     RecogiendoEnABBPick = 13
     EnCaminoaAlmacen = 14
     DejandoEnAlamcen = 15
+    Desactivado = 16
+    EnEspera = 17
 
 class Modula:
     PedirMaterial = [2,1,1]
@@ -50,14 +52,16 @@ class Control():
     def __init__(self):
         self.server = ModbusClient("10.22.240.51", 2022)
         self.serverModula = ModbusClient("10.22.244.185", 3000)
+        self.serverOMRON = ModbusClient("10.22.247.213", 1502)
 
         # self.server = ModbusClient("192.168.100.10", 12345) #TEST
         # self.serverModula = ModbusClient("192.168.100.10", 2000) #TEST
 
         self.EstadosSF = {"Detenido":0, "En Reposo": 1, "En Operacion": 2, "Terminado": 3}
         self.registros = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+        self.registroOMRON = [0,0,0,0,0,0]
         self.dir = InfoRegistros()
-        self.EstadosSMART = EstadosSMART()
+        self.EstadosROBOT = EstadosROBOT()
         self.instModula = Modula()
         self.operacionModula = False
         self.comprobacionModula = False
@@ -106,12 +110,12 @@ class Control():
             "Goal X":self.registros[15] , "Goal Y":self.registros[16] , "Current X":self.registros[17] , "Current Y":self.registros[18]}
             
             #Verifica si algun robot está haciendo la Tarea 1
-            if (self.SMART1["Estado robot"]==self.EstadosSMART.EnCaminoaModula or self.SMART1["Estado robot"]==self.EstadosSMART.RecogiendoEnModula or 
-            self.SMART1["Estado robot"]==self.EstadosSMART.EnCaminoaConveyor1 or self.SMART1["Estado robot"]==self.EstadosSMART.DejandoEnConveyor1):
+            if (self.SMART1["Estado robot"]==self.EstadosROBOT.EnCaminoaModula or self.SMART1["Estado robot"]==self.EstadosROBOT.RecogiendoEnModula or 
+            self.SMART1["Estado robot"]==self.EstadosROBOT.EnCaminoaConveyor1 or self.SMART1["Estado robot"]==self.EstadosROBOT.DejandoEnConveyor1):
                 self.robotEnTarea1 = 1
                 self.estadoActivoT1 = self.SMART1["Estado robot"]
-            elif (self.SMART2["Estado robot"]==self.EstadosSMART.EnCaminoaModula or self.SMART2["Estado robot"]==self.EstadosSMART.RecogiendoEnModula or 
-            self.SMART2["Estado robot"]==self.EstadosSMART.EnCaminoaConveyor1 or self.SMART2["Estado robot"]==self.EstadosSMART.DejandoEnConveyor1):
+            elif (self.SMART2["Estado robot"]==self.EstadosROBOT.EnCaminoaModula or self.SMART2["Estado robot"]==self.EstadosROBOT.RecogiendoEnModula or 
+            self.SMART2["Estado robot"]==self.EstadosROBOT.EnCaminoaConveyor1 or self.SMART2["Estado robot"]==self.EstadosROBOT.DejandoEnConveyor1):
                 self.robotEnTarea1 = 2
                 self.estadoActivoT1 = self.SMART2["Estado robot"]
             else:
@@ -119,12 +123,12 @@ class Control():
                 self.estadoActivoT1 = None
 
             #Verifica si algun robot esta haciendo la Tarea 2
-            if (self.SMART1["Estado robot"]==self.EstadosSMART.EnCaminoaConveyor2 or self.SMART1["Estado robot"]==self.EstadosSMART.RecogiendoEnConveyor2 or 
-            self.SMART1["Estado robot"]==self.EstadosSMART.EnCaminoaABBPlace or self.SMART1["Estado robot"]==self.EstadosSMART.DejandoEnABBPlace):
+            if (self.SMART1["Estado robot"]==self.EstadosROBOT.EnCaminoaConveyor2 or self.SMART1["Estado robot"]==self.EstadosROBOT.RecogiendoEnConveyor2 or 
+            self.SMART1["Estado robot"]==self.EstadosROBOT.EnCaminoaABBPlace or self.SMART1["Estado robot"]==self.EstadosROBOT.DejandoEnABBPlace):
                 self.robotEnTarea2 = 1
                 self.estadoActivoT2 = self.SMART1["Estado robot"]
-            elif (self.SMART2["Estado robot"]==self.EstadosSMART.EnCaminoaConveyor2 or self.SMART2["Estado robot"]==self.EstadosSMART.RecogiendoEnConveyor2 or 
-            self.SMART2["Estado robot"]==self.EstadosSMART.EnCaminoaABBPlace or self.SMART2["Estado robot"]==self.EstadosSMART.DejandoEnABBPlace):
+            elif (self.SMART2["Estado robot"]==self.EstadosROBOT.EnCaminoaConveyor2 or self.SMART2["Estado robot"]==self.EstadosROBOT.RecogiendoEnConveyor2 or 
+            self.SMART2["Estado robot"]==self.EstadosROBOT.EnCaminoaABBPlace or self.SMART2["Estado robot"]==self.EstadosROBOT.DejandoEnABBPlace):
                 self.robotEnTarea2 = 2
                 self.estadoActivoT2 = self.SMART2["Estado robot"]
             else:
@@ -132,12 +136,12 @@ class Control():
                 self.estadoActivoT2 = None
 
             #Verifica si algun robot esta haciendo la Tarea 3
-            if (self.SMART1["Estado robot"]==self.EstadosSMART.EnCaminoaABBPick or self.SMART1["Estado robot"]==self.EstadosSMART.RecogiendoEnABBPick or 
-            self.SMART1["Estado robot"]==self.EstadosSMART.EnCaminoaAlmacen or self.SMART1["Estado robot"]==self.EstadosSMART.DejandoEnAlamcen):
+            if (self.SMART1["Estado robot"]==self.EstadosROBOT.EnCaminoaABBPick or self.SMART1["Estado robot"]==self.EstadosROBOT.RecogiendoEnABBPick or 
+            self.SMART1["Estado robot"]==self.EstadosROBOT.EnCaminoaAlmacen or self.SMART1["Estado robot"]==self.EstadosROBOT.DejandoEnAlamcen):
                 self.robotEnTarea3 = 1
                 self.estadoActivoT3 = self.SMART1["Estado robot"]
-            elif (self.SMART2["Estado robot"]==self.EstadosSMART.EnCaminoaABBPick or self.SMART2["Estado robot"]==self.EstadosSMART.RecogiendoEnABBPick or 
-            self.SMART2["Estado robot"]==self.EstadosSMART.EnCaminoaAlmacen or self.SMART2["Estado robot"]==self.EstadosSMART.DejandoEnAlamcen):
+            elif (self.SMART2["Estado robot"]==self.EstadosROBOT.EnCaminoaABBPick or self.SMART2["Estado robot"]==self.EstadosROBOT.RecogiendoEnABBPick or 
+            self.SMART2["Estado robot"]==self.EstadosROBOT.EnCaminoaAlmacen or self.SMART2["Estado robot"]==self.EstadosROBOT.DejandoEnAlamcen):
                 self.robotEnTarea3 = 2
                 self.estadoActivoT3 = self.SMART2["Estado robot"]
             else:
@@ -145,17 +149,52 @@ class Control():
                 self.estadoActivoT3 = None
 
             #Verifica si algún robot está libre
-            if (self.SMART1["Estado robot"] == self.EstadosSMART.Charging) or (self.SMART1["Estado robot"] == self.EstadosSMART.Libre): self.SMART1Libre = True
+            if (self.SMART1["Estado robot"] == self.EstadosROBOT.Charging) or (self.SMART1["Estado robot"] == self.EstadosROBOT.Libre): self.SMART1Libre = True
             else: self.SMART1Libre = False
-            if (self.SMART2["Estado robot"] == self.EstadosSMART.Charging) or (self.SMART2["Estado robot"] == self.EstadosSMART.Libre): self.SMART2Libre = True
+            if (self.SMART2["Estado robot"] == self.EstadosROBOT.Charging) or (self.SMART2["Estado robot"] == self.EstadosROBOT.Libre): self.SMART2Libre = True
             else: self.SMART2Libre = False
-
-            
 
         else:
             errCon +=1
             if errCon == 5:
-                self.error("No se pudo establecer conexión con el servidor",1)
+                self.error("No se pudo establecer conexión con el servidor principal",1)
+
+        if self.serverOMRON.open():
+            errConOm = 0
+            self.registroOMRON = self.serverOMRON.read_holding_registers(5,5)
+
+            self.OMRON = {"Estado robot":self.registroOMRON[0]}
+
+            #Verifica si el OMRON esta libre
+            if (self.OMRON["Estado robot"] == self.EstadosROBOT.Charging): self.OMRONLibre = True
+            else: self.OMRONLibre = False
+
+            #Verifica si el OMRON esta esperando
+            if (self.OMRON["Estado robot"] == self.EstadosROBOT.EnEspera): self.OMRONEsperando = True
+            else: self.OMRONEsperando = False
+
+            #Verifica si el OMRON esta haciendo la Tarea 2
+            if (self.OMRON["Estado robot"]==self.EstadosROBOT.EnCaminoaConveyor2 or self.OMRON["Estado robot"]==self.EstadosROBOT.RecogiendoEnConveyor2 or 
+            self.OMRON["Estado robot"]==self.EstadosROBOT.EnCaminoaABBPlace or self.OMRON["Estado robot"]==self.EstadosROBOT.DejandoEnABBPlace):
+                self.robotEnTarea2 = 3
+                self.estadoActivoT2 = self.OMRON["Estado robot"]
+            else:
+                self.robotEnTarea2 = 0
+                self.estadoActivoT2 = None
+
+            #Verifica si el OMRON esta haciendo la Tarea 3
+            if (self.OMRON["Estado robot"]==self.EstadosROBOT.EnCaminoaABBPick or self.OMRON["Estado robot"]==self.EstadosROBOT.RecogiendoEnABBPick or 
+            self.OMRON["Estado robot"]==self.EstadosROBOT.EnCaminoaAlmacen or self.OMRON["Estado robot"]==self.EstadosROBOT.DejandoEnAlamcen):
+                self.robotEnTarea3 = 3
+                self.estadoActivoT3 = self.OMRON["Estado robot"]
+            else:
+                self.robotEnTarea3 = 0
+                self.estadoActivoT3 = None
+
+        else:
+            errConOm +=1
+            if errConOm == 5:
+                self.error("No se pudo establecer conexión con el servidor OMRON",1)
 
     def escrituraServidor(self, registros, valores):
         self.server.write_multiple_registers(registros,valores)
@@ -165,10 +204,10 @@ class Control():
         print("Detenido")
 
     def EnReposo(self):
-        if (self.SMART1["Estado robot"] != self.EstadosSMART.Charging):
-            self.escrituraServidor[self.dir.EstadoSMART1,[self.EstadosSMART.EnCaminoaHOME]]
-        if (self.SMART2["Estado robot"] != self.EstadosSMART.Charging):
-            self.escrituraServidor[self.dir.EstadoSMART2,[self.EstadosSMART.EnCaminoaHOME]]
+        if (self.SMART1["Estado robot"] != self.EstadosROBOT.Charging):
+            self.escrituraServidor[self.dir.EstadoSMART1,[self.EstadosROBOT.EnCaminoaHOME]]
+        if (self.SMART2["Estado robot"] != self.EstadosROBOT.Charging):
+            self.escrituraServidor[self.dir.EstadoSMART2,[self.EstadosROBOT.EnCaminoaHOME]]
         if self.registros[self.dir.InstruccionPLC] != 0:
             self.escrituraServidor(self.dir.InstruccionPLC,[0])
         if self.registros[self.dir.InstruccionABB] != 0:
@@ -201,33 +240,33 @@ class Control():
             if self.robotEnTarea1 == 0: #Si ningun SMART esta haciendo la Tarea 1
                 if self.SMART1Libre and self.SMART2Libre:
                     if (self.SMART1["Bateria"] > self.SMART2["Bateria"]):
-                        if self.contadorTareasS1 <= (self.contadorTareasS2 + 1):
-                            self.escrituraServidor(self.dir.EstadoSMART1,[self.EstadosSMART.EnCaminoaModula])
+                        if self.contadorTareasS1 < (self.contadorTareasS2 + 1):
+                            self.escrituraServidor(self.dir.EstadoSMART1,[self.EstadosROBOT.EnCaminoaModula])
                             self.Tarea1 = True
                             self.contadorTareasS1+=1
                         else:
-                            self.escrituraServidor(self.dir.EstadoSMART2,[self.EstadosSMART.EnCaminoaModula])
+                            self.escrituraServidor(self.dir.EstadoSMART2,[self.EstadosROBOT.EnCaminoaModula])
                             self.Tarea1 = True
                             self.contadorTareasS2+=1
                     elif (self.SMART1["Bateria"] < self.SMART2["Bateria"]):
-                        if self.contadorTareasS2 <= (self.contadorTareasS1 + 1):
-                            self.escrituraServidor(self.dir.EstadoSMART2,[self.EstadosSMART.EnCaminoaModula])
+                        if self.contadorTareasS2 < (self.contadorTareasS1 + 1):
+                            self.escrituraServidor(self.dir.EstadoSMART2,[self.EstadosROBOT.EnCaminoaModula])
                             self.Tarea1 = True
                             self.contadorTareasS2+=1
                         else:
-                            self.escrituraServidor(self.dir.EstadoSMART1,[self.EstadosSMART.EnCaminoaModula])
+                            self.escrituraServidor(self.dir.EstadoSMART1,[self.EstadosROBOT.EnCaminoaModula])
                             self.Tarea1 = True
                             self.contadorTareasS1+=1
                 elif self.SMART1Libre:
-                    self.escrituraServidor(self.dir.EstadoSMART1,[self.EstadosSMART.EnCaminoaModula])
+                    self.escrituraServidor(self.dir.EstadoSMART1,[self.EstadosROBOT.EnCaminoaModula])
                     self.contadorTareasS1+=1
                     self.Tarea1 = True
                 elif self.SMART2Libre:
-                    self.escrituraServidor(self.dir.EstadoSMART2,[self.EstadosSMART.EnCaminoaModula])
+                    self.escrituraServidor(self.dir.EstadoSMART2,[self.EstadosROBOT.EnCaminoaModula])
                     self.contadorTareasS2+=1
                     self.Tarea1 = True
             elif self.robotEnTarea1 == 1:
-                if self.SMART1["Estado robot"] == EstadosSMART.EnCaminoaConveyor1:
+                if self.SMART1["Estado robot"] == EstadosROBOT.EnCaminoaConveyor1:
                     self.serverModula.write_multiple_registers(0,self.instModula.ConfirmarOperacion)
                     self.serverModula.write_single_coil(0,1)
                     self.operacionModula = False
@@ -236,7 +275,7 @@ class Control():
                     self.server.write_single_register(1,0)
                     time.sleep(1)
             elif self.robotEnTarea1 == 2:
-                if self.SMART2["Estado robot"] == EstadosSMART.EnCaminoaConveyor1:
+                if self.SMART2["Estado robot"] == EstadosROBOT.EnCaminoaConveyor1:
                     self.serverModula.write_multiple_registers(0,self.instModula.ConfirmarOperacion)
                     self.serverModula.write_single_coil(0,1)
                     self.operacionModula = False
@@ -246,7 +285,7 @@ class Control():
                     time.sleep(1)
 
         if self.Tarea1 == True: #Lógica para detectar el cambio de estados que da fin a la Tarea 1 e inicia el Proceso 1
-            if (self.memoriaTarea1 == self.EstadosSMART.DejandoEnConveyor1) and (self.memoriaTarea1 != self.estadoActivoT1):
+            if (self.memoriaTarea1 == self.EstadosROBOT.DejandoEnConveyor1) and (self.memoriaTarea1 != self.estadoActivoT1):
                 #Significa que hubo un cambio de estado de dejando en conveyor a Libre
                 self.Tarea1 = False #Se acaba la Tarea 1
                 self.Proceso1 = True #Inicia el Proceso 1
@@ -264,7 +303,7 @@ class Control():
                 self.Tarea2 = True
 
         if self.Tarea2 == True: #Comprobación cambio de estado Tarea 2
-            if (self.memoriaTarea2 == self.EstadosSMART.DejandoEnABBPlace) and (self.memoriaTarea2 != self.estadoActivoT2):
+            if (self.memoriaTarea2 == self.EstadosROBOT.DejandoEnABBPlace) and (self.memoriaTarea2 != self.estadoActivoT2):
                 #Significa que hubo un cambio de estado de dejando en ABB Place a Libre
                 self.Tarea2 = False #Se acaba la Tarea 2
                 self.Proceso2 = True #Inicia el Proceso 2
@@ -274,42 +313,20 @@ class Control():
         
         if self.Tarea2 == True: #Manda un robot a hacer la Tarea 2 y monitorea los estados para darle fin a la Tarea 2 y empezar el Proceso 2
             if self.robotEnTarea2 == 0: #Si ningun SMART esta haciendo la Tarea 2
-                if self.SMART1Libre and self.SMART2Libre:
-                    if (self.SMART1["Bateria"] > self.SMART2["Bateria"]):
-                        if self.contadorTareasS1 <= (self.contadorTareasS2 + 1):
-                            self.escrituraServidor(self.dir.EstadoSMART1,[self.EstadosSMART.EnCaminoaConveyor2])
-                            self.contadorTareasS1+=1
-                        else:
-                            self.escrituraServidor(self.dir.EstadoSMART2,[self.EstadosSMART.EnCaminoaConveyor2])
-                            self.contadorTareasS2+=1
-                    elif (self.SMART1["Bateria"] < self.SMART2["Bateria"]):
-                        if self.contadorTareasS2 <= (self.contadorTareasS1 + 1):
-                            self.escrituraServidor(self.dir.EstadoSMART2,[self.EstadosSMART.EnCaminoaConveyor2])
-                            self.contadorTareasS2+=1
-                        else:
-                            self.escrituraServidor(self.dir.EstadoSMART1,[self.EstadosSMART.EnCaminoaConveyor2])
-                            self.contadorTareasS1+=1
-                elif self.SMART1Libre:
-                    self.escrituraServidor(self.dir.EstadoSMART1,[self.EstadosSMART.EnCaminoaConveyor2])
-                    self.contadorTareasS1+=1
-                elif self.SMART2Libre:
-                    self.escrituraServidor(self.dir.EstadoSMART2,[self.EstadosSMART.EnCaminoaConveyor2])
-                    self.contadorTareasS2+=1
+                if self.OMRONLibre:
+                    self.serverOMRON.write_single_register(5,self.EstadosROBOT.EnCaminoaConveyor2)
 
-
-        #### Aún no se tiene información sobre como va a funcionar el ABB ###
-        # 
         if self.Proceso2 == True: #Manda la instrucción de Inicio al ABB y monitorea su estado para terminar el proceso e iniciar Tarea 3
             if self.estadoABB == 0:
                 self.escrituraServidor(self.dir.InstruccionABB,[1])
             elif self.estadoABB == 1:
                 self.escrituraServidor(self.dir.InstruccionABB,[0])
-            elif self.estadoABB == 5: #Depende de la indormación que mande el PLC respecto al ABB
+            elif self.estadoABB == 2: #Depende de la indormación que mande el PLC respecto al ABB
                 self.Proceso2 = False
                 self.Tarea3 = True
 
         if self.Tarea3 == True: #Comprobación cambio de estado de Tarea 3
-            if (self.memoriaTarea3 == self.EstadosSMART.DejandoEnAlamcen) and (self.memoriaTarea3 != self.estadoActivoT3):
+            if (self.memoriaTarea3 == self.EstadosROBOT.DejandoEnAlamcen) and (self.memoriaTarea3 != self.estadoActivoT3):
                 #Significa que hubo un cambio de estado de dejando en ABB Place a Libre
                 self.Tarea3 = False #Se acaba la Tarea 2
                 self.memoriaTarea3 = None
@@ -320,27 +337,8 @@ class Control():
         
         if self.Tarea3 == True: #Manda un robot a hacer la Tarea 3 y monitorea los estados para darle fin a la Tarea 3 y darle fin al proceso activo de SF
             if self.robotEnTarea3 == 0: #Si ningun SMART esta haciendo la Tarea 3
-                if self.SMART1Libre and self.SMART2Libre:
-                    if (self.SMART1["Bateria"] > self.SMART2["Bateria"]):
-                        if self.contadorTareasS1 <= (self.contadorTareasS2 + 1):
-                            self.escrituraServidor(self.dir.EstadoSMART1,[self.EstadosSMART.EnCaminoaABBPick])
-                            self.contadorTareasS1+=1
-                        else:
-                            self.escrituraServidor(self.dir.EstadoSMART2,[self.EstadosSMART.EnCaminoaABBPick])
-                            self.contadorTareasS2+=1
-                    elif (self.SMART1["Bateria"] < self.SMART2["Bateria"]):
-                        if self.contadorTareasS1 <= (self.contadorTareasS1 + 1):
-                            self.escrituraServidor(self.dir.EstadoSMART2,[self.EstadosSMART.EnCaminoaABBPick])
-                            self.contadorTareasS2+=1
-                        else:
-                            self.escrituraServidor(self.dir.EstadoSMART1,[self.EstadosSMART.EnCaminoaABBPick])
-                            self.contadorTareasS1+=1
-                elif self.SMART1Libre:
-                    self.escrituraServidor(self.dir.EstadoSMART1,[self.EstadosSMART.EnCaminoaABBPick])
-                    self.contadorTareasS1+=1
-                elif self.SMART2Libre:
-                    self.escrituraServidor(self.dir.EstadoSMART2,[self.EstadosSMART.EnCaminoaABBPick])
-                    self.contadorTareasS2+=1
+                if self.OMRONEsperando:
+                    self.serverOMRON.write_single_register(5,self.EstadosROBOT.EnCaminoaABBPick)
 
         if self.verificarFin == True:
             #Tal vez se pueden meter más condiciones de verificación como esperar a que los robots esten en charging, o algo así.
@@ -366,7 +364,6 @@ class Control():
         else:
             self.error("Estado de Smart Factory no reconocido")
         
-
     def error(self, msg="", serv=0):
         if msg != "":
             msg = ": " + msg

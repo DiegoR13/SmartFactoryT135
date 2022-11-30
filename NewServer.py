@@ -6,13 +6,16 @@ import math
 
 class Server():
     def __init__(self):
-        self.reg = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+        self.reg = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+        self.regOmron = [0,0,0,0,0,0]
         self.server = ModbusClient(host="10.22.240.51", port=2022)
+        self.OMRON = ModbusClient(host="10.22.247.213", port=1502)
         # self.server = ModbusClient(host="192.168.100.10", port=12345) ##Para Simulaciones
+        # self.OMRON = ModbusClient(host="192.168.100.10", port=2000) #Para Simulaciones
         self.EstadosRobot = ["Reset","Charging","En Camino a Modula","Recogiendo En Modula",
         "En Camino a Conveyor1","Dejando En Conveyor1","Libre","En Camino a HOME",
         "En Camino a Conveyor2","Recogiendo en Conveyor2","En Camino a ABB Place","Dejando en ABB Place",
-        "En Camino a ABB Pick","Recogiendo en ABB Pick", "EnCaminoaAlmacen","DejandoEnAlamcen"]
+        "En Camino a ABB Pick","Recogiendo en ABB Pick", "En Camino a Almacen","Dejando En Alamcen","Desactivado","En Espera"]
         self.EstadosMision = ["PENDING","ACTIVE","PREEMPTED","SUCCEEDED",
         "ABORTED","REJECTED","PREEMPTING","RECALLING","RECALLED","LOST"]
         self.EstadosModula = ["Vacio", "Piezas Disponibles"]
@@ -40,8 +43,11 @@ class Server():
         self.GYx2 = self.reg[16]
         self.CXx2 = self.reg[17]
         self.CYx2 = self.reg[18]
-        
-        # self.RSOM = self.reg[21]
+
+        if self.OMRON.open():
+            self.regOmron = self.OMRON.read_holding_registers(5,5)
+        self.RSOM = self.regOmron[0]
+
         # self.MSOM = self.reg[22]
         # self.BatOM = self.reg[23]
         # self.GXOM = self.reg[24]
@@ -69,7 +75,7 @@ class Server():
         # Texto Estados Robot
         self.RSx1 = self.EstadosRobot[self.reg[5]]
         self.RSx2 = self.EstadosRobot[self.reg[12]]
-        # self.RSOM = self.EstadosRobot[self.reg[21]]
+        self.RSOM = self.EstadosRobot[self.regOmron[0]]
         #Texto Estados Mision
         self.MSx1 = self.EstadosMision[self.reg[6]]
         self.MSx2 = self.EstadosMision[self.reg[13]]
@@ -181,3 +187,6 @@ class Server():
             self.colorx2 = "#000000"
         else:
             self.colorx2 = "#f78902"
+
+    def changeStates(self,state,value):
+        self.server.write_single_register(state,value)
